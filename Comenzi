@@ -1,0 +1,23 @@
+Python: python3 --version
+Python 3.7.10
+SELENIUM:pip install -U selenium
+>>> import selenium
+>>> print (selenium.__version__)
+3.141.0
+pip3 install numpy
+pip3 install opencv
+pip3 install opencv-python
+pip3 install pyautogui
+pip3 install pyaudio
+pip3 install PyAudio
+PyAudio: sudo apt install python3-pyaudio
+
+
+
+
+
+pip3 install playsound pyaudio pydub ffmpeg-python
+
+
+https://stackoverflow.com/questions/53611499/notadirectoryerror-errno-20-not-a-directory-home-ghost-automation-pwd-geck
+
