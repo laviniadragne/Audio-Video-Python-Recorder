@@ -1,0 +1,190 @@
+Nume: Dragne Lavinia-Stefana
+Student: Universitatea Politehnica Bucuresti
+         Facultatea de Automatica si Calculatoare
+Email: lavinia.dragne@stud.acs.upb.ro
+
+
+                                       # Audio-Video Recorder #
+
+
+
+1. Instalati Python 3, apoi Selenium Python API pentru a explora pagini web.
+Deasemeni instalati numpy, opencv, pyautogui si pyaudio.
+
+	* Sistem de operare: Linux, Ubuntu "18.04.5 LTS (Bionic Beaver)", 
+			     kernel version: 5.4.0-66-generic
+			     -> pentru determinare: cat /etc/os-release si uname -r
+
+	* Pentru Python3 aveam deja instalata o versiune, doar am verificat-o cu: 
+	-> python3 --version
+	-> output: Python 3.7.10
+	
+	* Pentru Selenium Python API:
+	-> pip install -U selenium
+	-> verificare instalare cu succes (se scrie in terminal):
+		-> python3
+		>>> import selenium
+		>>> print(selenium.__version__)
+			3.141.0
+
+	* Pentru numpy: pip install numpy
+	* Pentru opencv: sudo apt install python-opencv (aici am intampinat o problema pentru ca
+ 	initial am folosit comanda pip install opencv-python, dar primeam erori la instalare, asa ca
+ 	am folosit indicatiile de aici: 
+	https://stackoverflow.com/questions/19876079/cannot-find-module-cv2-when-using-opencv
+	* Pentru pyaudio: sudo apt install python-pyaudio
+	* Pentru pyautogui: pip install pyautogui. 
+	Am primit eroarea: 
+	-> NOTE: You must install tkinter on Linux to use MouseInfo. Run the following: sudo apt-get
+ 	install python-tk python-dev) si am rezolvat-o prin:
+		-> apt-get install python-tk
+	
+	Pentru alte module suplimentare instalate am folosit in majoritar utilitarul pip:
+	* sudo apt-get install python-scipy
+	* pip install scipy -> https://stackoverflow.com/questions/24808043/importerror-no-module-
+	named-scipy
+	* pip install matplotlib
+	* sudo apt-get install scrot
+	* pip install moviepy
+	* sudo apt install ffmpeg
+
+	* Pentru activarea inregistrarii suntetului de pe device si nu de pe microfon:
+		-> sudo apt install pavucontrol
+		-> pavucontrol->Recording->Monitor of Build in Audio Analog Stereo
+
+	* Pentru analiza audio de decibeli:
+		* pip install pydub
+
+
+
+
+
+2. Descriere aplicatie:
+	a) Structura:
+
+	Proiectul este structurat in 5 fisiere.
+	Pentru inregistrarea ecranului, audio, deschiderea browser-ului de internet si analiza
+	nivelului de decibeli am folosit clasele: ScreenRecorder, AudioRecorder, BrowserOpener,
+	AudioAnalyzer.
+	Main point-ul aplicatiei il reprezinta fisierul engine.py care leaga functionalitatea tuturor
+	claselor.
+	
+	b) Rulare:
+
+	* python engine.py
+	
+	c) Functionalitate:
+	
+	* Deschiderea unei pagini de youtube:
+	Script-ul navigheaza pe youtube, folosindu-se de functia open_browser. Aceasta, prin
+	intermediul clasei BrowserOpener, deschide un driver pentru Firefox. Ea se foloseste
+	de un GeckoDriver, acesta reprezentad legatura dintre browser-ul de Firefox si Selenium API.
+	El este descarcat la calea executable_path.
+
+	Se trimite url-ul pentru youtube ca si parametru, se inspecteaza pagina html de
+	youtube, obtinandu-se numele butoanelor pentru 'I agree' si 'Skip ads' pe care se apasa.
+	Ulterior se pune in sleep pentru 120 secunde browser-ul.
+
+	Observatie: Am identificat ca uneori, daca timpul setat este de 120 de secunde, nu este apasat
+	mereu butonul de skip-ads. Totusi, pentru un timp mai mic, de 30 secunde, aceasta problema nu
+ 	apare. Am considerat ca poate fi vorba de o nesincronizare.
+
+	
+	* Inregistrarea audio:
+	Initial, am incercat sa implementez o varianta de clasa Singleton pentru AudioRecorder, 
+	nefiind necesara decat o singura instanta a acestei clase, totusi consider ca nu este 
+	neaparat necesar acest detaliu, in cazul acesta. 
+	Clasa AudioRecorder se foloseste de modulele pyaudio, numpy si wave. 
+	Se utilizeaza un obiect de tip stream cu ajutorul caruia putem inregistra sunetul device-ului,
+	folosind metoda stream.read(). Odata terminata inregistarea, se foloseste modulul wave pentru
+	a scrie un fisier audio WAV pe disc.
+
+	Cateva precizari pentru semnificatia variabilelor:
+	sample_rate = numarul de capturi audio facute/ secunda
+	chunk = numarul de cadre
+	channels = fiecare cadru va avea 2 canale
+	format = fiecare cadru va avea 2 bytes
+	(rate * recorder_seconds) = numarul de cadre care ar trebui inregistare
+
+	* Inregistrarea video:
+	Se foloseste functia record_screen, clasa ScreenRecorder, modulele cv2, numpy si pyautogui.
+	Se initializeaza formatul folsoit pentru a scrie un fisier video. Acesta va fi numit
+	"output.avi". Se seteaza dimensiunea ecranul ce trebuie inregistrat folosind functia
+	pyautogui.size(), care intoarce dimensiunea intregului monitor.
+	Se foloseste de catre OpenCV biblioteca fourcc pentru a scrie fisierul video. Valorea 
+	frames/second este setata la 14.0. 
+	Se fac capturi la ecran si se scriu frame cu frame in out, timp de 120 secunde. Pentru 
+	timp se foloseste functia minute_passed, care calculeaza daca au trecut 120 secunde de la
+	minutul dinaintea intrarii in functie.
+	Functia screenshot() returneaza un obiect imagine, ce este convertit intr-o matrice. Ulterior,
+	cadrul se converteste in RGB, deoarece OpenCv foloseste BGR in mod implicit.
+
+	* Creare fisier audio-video
+	Functia create_video uneste, tinand cont de durata celor 2 fisiere (audio si screen record)
+	inregistrarile, intr-un fisier video, denumit in functie de ora la care este creat.
+
+	* Utilizare thread-uri:
+	Pentru a rula in paralel cele 3 functii am folosit 3 thread-uri. Am incercat sa le sincronizez
+	folosind o bariera, dar aici am intampit cele mai multe probleme, deoarece imaginea mereu
+	era mai slow decat viteza audio-ului. De asemenea, deschiderea browser-ului este destul de
+	lenta. Pentru aceasta, m-am gandit ca o posibila solutie ar putea fi crearea unui proces,
+	care sa deschida browser-ul, in locul unui thread. Procesul ar avea resurse separate, in acest
+	fel si nu le-ar mai imparti cu cele pentru inregistrare.
+	Nu am avut totusi timp sa implementez aceasta idee.
+
+	* Analiza audio:
+	Se foloseste functia audio_analyze si clasa AudioAnalyzer, alaturi de modulele pydub si
+	soundfile. Se convertesc sample-urile din fisierul audio 'recorded.wav' in decibeli.
+	Functia create_percentile calculeaza nivelul dbFS folosind libraria numpy, iar functia
+	figure_plot creaza, folosindu-se de libraria matplotlib, graficul samples-decibels.
+
+
+	Referinte:
+	https://www.guru99.com/python-multithreading-gil-example.html
+	https://coderslegacy.com/python/pyaudio-recording-and-playing-sound/
+	https://stackoverflow.com/questions/8074595/screen-recorder-in-python/50087558#50087558
+	https://stackoverflow.com/questions/25743450/limit-loop-frame-rate
+	https://stackoverflow.com/questions/62859876/implementing-of-barrier-in-python2-7
+	https://www.programmersought.com/article/70016235217/
+	https://stackoverflow.com/questions/66138578/convert-waves-to-decibels-in-python
+	https://stackoverflow.com/questions/52943151/python-get-volume-decibel-level-real-time-or-
+	from-a-wav-file
+	https://stackoverflow.com/questions/13243690/decibel-values-at-specific-points-in-wav-file
+	https://stackoverflow.com/questions/13422186/starting-two-methods-at-the-same-time-in-python
+	https://www.thepythoncode.com/article/play-and-record-audio-sound-in-python
+	https://www.thepythoncode.com/article/make-screen-recorder-python
+	https://www.thepythoncode.com/article/using-threads-in-python
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
