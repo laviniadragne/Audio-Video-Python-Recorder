@@ -96,7 +96,7 @@ video_filename = "%s.avi"%now
 # Combine the recorded video and audio into a video file
 create_video('recorded.wav', 'output.avi')
 
-Analize the audio
+# Analize the audio
 audio_analyze()
 
 
